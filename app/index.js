@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // use all vendor prefixed versions of getUserMedia
+    window.navigator.getUserMedia = window.navigator.getUserMedia || window.navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia || window.navigator.msGetUserMedia;
+
     // get all the important dom elements
     var $myId = document.querySelector('#my-id');
     var $state = document.querySelector('#state');
@@ -15,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // generate random id to identify
     var uuid = Math.random().toString(36).substr(2, 7);
+    var remoteUuid = null;
     var connection;
 
     $myId.innerText = 'My id: ' + uuid;
@@ -48,6 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     peer.on('connection', function (dataConnection) {
         console.log('connection!', dataConnection);
+        remoteUuid = dataConnection.peer;
         setConnection(dataConnection);
     });
 
@@ -66,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         dataConnection.on('open', function () {
             console.log('DataConnection open!');
-            $state.innerText = 'Connected';
+            $state.innerText = 'Connected to ' + remoteUuid;
             $disconnectedContainer.style.display = 'none';
             $connectedContainer.style.display = 'block';
             sendMessage('hi there');
@@ -102,6 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     $connectButton.addEventListener('click', function(){
+        remoteUuid = $searchInput.value;
         setConnection(peer.connect($searchInput.value));
     });
 
@@ -109,4 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
         sendMessage($chatInput.value);
         $chatInput.value = '';
     });
+
+
+
 });
