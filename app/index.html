@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        #connected-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<h1 id="my-id"></h1>
+
+<h3 id="state">Setting up...</h3>
+
+<div id="disconnected-container">
+    <input id="search-input">
+    <button id="connect-button">connect</button>
+</div>
+
+<div id="connected-container">
+    <ul id="messages">
+
+    </ul>
+    <input id="chat-input">
+    <button id="send-button">send</button>
+</div>
+
+
+<script src="peer.min.js"></script>
+<script src="index.js"></script>
+</body>
+</html>
