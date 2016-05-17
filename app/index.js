@@ -13,13 +13,22 @@ document.addEventListener("DOMContentLoaded", function () {
     var $disconnectedContainer = document.querySelector('#disconnected-container');
     var $connectedContainer = document.querySelector('#connected-container');
 
+    var $localVideo = document.querySelector('#local-video');
+    var $remoteVideo = document.querySelector('#remote-video');
+
+    var $controlEnd = document.querySelector('#control-end');
+    var $controlMute = document.querySelector('#control-mute');
+    var $controlPause = document.querySelector('#control-pause');
+
     // setup messages array. this stores all messages sent during this session
     var messages = [];
 
     // generate random id to identify
     var uuid = Math.random().toString(36).substr(2, 7);
+    uuid = 'test';
     var remoteUuid = null;
     var connection;
+    var stream;
 
     $myId.innerText = 'My id: ' + uuid;
 
@@ -46,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
         $connectedContainer.style.display = 'none';
     });
     peer.on('error', function (err) {
-        $state.innerText = 'Peer error! ' +  err.message;
+        $state.innerText = 'Peer error! ' + err.message;
         $disconnectedContainer.style.display = 'block';
         $connectedContainer.style.display = 'none';
     });
@@ -56,7 +65,22 @@ document.addEventListener("DOMContentLoaded", function () {
         setConnection(dataConnection);
     });
 
-    function setConnection(dataConnection){
+    peer.on('call', function(call) {
+        console.log("call!");
+        // Answer the call, providing our mediaStream
+        getUserMedia(function (stream) {
+            $localVideo.src = window.URL.createObjectURL(stream);
+            call.answer(stream);
+
+            call.on('stream', function(stream) {
+                $remoteVideo.src = window.URL.createObjectURL(stream);
+            });
+        }, function(err){
+            console.log("Get usermedia error", err);
+        })
+    });
+
+    function setConnection(dataConnection) {
         if (connection) {
             // only allow one active connection, otherwise more logic is required
             connection.close();
@@ -67,6 +91,22 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.type === 'message') {
                 messages.push({text: data.data, sender: 'User'});
                 updateMessageList();
+            }
+
+            if(data.type === 'control'){
+                switch(data.data){
+                    case 'mute':
+                        $remoteVideo.muted = !$remoteVideo.muted;
+                        break;
+                    case 'pause':
+                        console.log('paused?', $remoteVideo.paused);
+                        if($remoteVideo.paused){
+                            $remoteVideo.play();
+                        } else {
+                            $remoteVideo.pause();
+                        }
+                        break;
+                }
             }
         });
         dataConnection.on('open', function () {
@@ -106,16 +146,60 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    $connectButton.addEventListener('click', function(){
+    function getUserMedia(callback){
+        if(stream){
+            callback(stream);
+        } else {
+            navigator.getUserMedia({
+                video: true,
+                audio: true
+            }, function (_stream) {
+                stream = _stream;
+                callback(stream);
+            }, function(err){
+                console.log("Get usermedia error", err);
+            })
+        }
+    }
+
+    $connectButton.addEventListener('click', function () {
         remoteUuid = $searchInput.value;
         setConnection(peer.connect($searchInput.value));
+
+        getUserMedia(function (stream) {
+            $localVideo.src = window.URL.createObjectURL(stream);
+            var call = peer.call(remoteUuid, stream);
+            call.on('stream', function(stream) {
+                $remoteVideo.src = window.URL.createObjectURL(stream);
+            });
+        }, function(err){
+            console.log("Get usermedia error", err);
+        })
     });
 
-    $sendButton.addEventListener('click', function(){
+    $sendButton.addEventListener('click', function () {
         sendMessage($chatInput.value);
         $chatInput.value = '';
     });
 
 
+    $controlEnd.addEventListener('click', function(){
+        if(connection){
+            connection.close();
+        }
+    });
 
+
+    $controlMute.addEventListener('click', function(){
+        if (connection) {
+            connection.send({type: 'control', data: 'mute'});
+        }
+    });
+
+
+    $controlPause.addEventListener('click', function(){
+        if (connection) {
+            connection.send({type: 'control', data: 'pause'});
+        }
+    });
 });
