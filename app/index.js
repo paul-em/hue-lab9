@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // generate random id to identify
     var uuid = Math.random().toString(36).substr(2, 7);
-    uuid = 'test';
     var remoteUuid = null;
     var connection;
     var stream;
